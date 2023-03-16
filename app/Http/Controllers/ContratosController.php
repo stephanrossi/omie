@@ -782,6 +782,7 @@ class ContratosController extends Controller
         try {
 
             $cnpjs = self::getCnpj();
+            $cods_omie = [];
 
             foreach ($cnpjs as $cnpj) {
                 $contas = Http::post('https://app.omie.com.br/api/v1/financas/contareceber/', [
@@ -800,12 +801,14 @@ class ContratosController extends Controller
                 if ($contas->status() !== 500) {
                     foreach ($contas['conta_receber_cadastro'] as $conta) {
                         $cod_omie = $conta['codigo_lancamento_omie'];
-                        echo $cnpj->cnpj_cpf . " - " . $cod_omie . "\n";
+                        array_push($cods_omie, $cod_omie);
+                        // echo $cnpj->cnpj_cpf . " - " . $cod_omie . "\n";
                     }
                 } else {
-                    echo $cnpj->cnpj_cpf . "\n";
+                    // echo "erro: " . $cnpj->cnpj_cpf . "\n";
                 }
             }
+            return $cods_omie;
         } catch (Exception $e) {
             print_r($e->getMessage());
         }
