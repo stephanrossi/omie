@@ -14,6 +14,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/contas', [ContratosController::class, 'getContasReceber']);
+Route::get('/contas', [ContratosController::class, 'getConsultaContasReceber']);
 Route::get('/cnpj', [ContratosController::class, 'getCnpj']);
 

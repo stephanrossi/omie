@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Contrato;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -12,13 +11,16 @@ class ContratosController extends Controller
 
     private static function getCnpj()
     {
-        $cnpj = DB::table('tbcliente')
-            ->select('cnpj_cpf')
-            // ->where('datainicio_resp', '>', '2023-02-01')
-            ->where('statuss', 1)
-            ->limit(100)
-            ->get();
-        return $cnpj;
+        try {
+            $cnpj = DB::table('tbcliente')
+                ->select('cnpj_cpf')
+                ->where('statuss', 1)
+                ->get();
+
+            return $cnpj;
+        } catch (Exception $e) {
+            exit("getCnpj: " . $e->getMessage());
+        }
     }
 
     public function getContratos()
@@ -777,10 +779,9 @@ class ContratosController extends Controller
         }
     }
 
-    public function getContasReceber()
+    private static function getListaContasReceber()
     {
         try {
-
             $cnpjs = self::getCnpj();
             $cods_omie = [];
 
@@ -797,20 +798,46 @@ class ContratosController extends Controller
                         ]
                     ]
                 ]);
-
                 if ($contas->status() !== 500) {
                     foreach ($contas['conta_receber_cadastro'] as $conta) {
                         $cod_omie = $conta['codigo_lancamento_omie'];
                         array_push($cods_omie, $cod_omie);
-                        // echo $cnpj->cnpj_cpf . " - " . $cod_omie . "\n";
                     }
-                } else {
-                    // echo "erro: " . $cnpj->cnpj_cpf . "\n";
                 }
             }
             return $cods_omie;
         } catch (Exception $e) {
-            print_r($e->getMessage());
+            exit("getListaContasReceber: " . $e->getMessage());
+        }
+    }
+
+    public function getConsultaContasReceber()
+    {
+        try {
+            $contas = self::getListaContasReceber();
+
+            foreach ($contas as $conta) {
+                $lancamentos = Http::post('https://app.omie.com.br/api/v1/financas/contareceber/', [
+                    "call" => "ConsultarContaReceber",
+                    "app_key" => "219404447262",
+                    "app_secret" => "2c1d5ee2df37fe502681716fd4b0d683",
+                    "param" => [
+                        [
+                            "codigo_lancamento_omie" => $conta,
+                        ]
+                    ]
+                ]);
+
+                if ($lancamentos->status() !== 500) {
+                    print_r($lancamentos['codigo_cliente_fornecedor']);
+                    print_r($lancamentos['valor_documento']);
+                    print_r($lancamentos['status_titulo']);
+                    print_r($lancamentos['observacao']);
+                    echo "\n";
+                }
+            }
+        } catch (Exception $e) {
+            exit("getConsultaContasReceber: " . $e->getMessage());
         }
     }
 }
